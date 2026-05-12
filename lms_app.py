@@ -42,7 +42,7 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 # Version  (bump this string when distributing a new build)
 # ─────────────────────────────────────────────────────────────────────────────
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 # GitHub repo used for update checks (format: "owner/repo")
 GITHUB_REPO = "jasgie/lms_automation"
@@ -353,8 +353,8 @@ class App(tk.Tk):
             cursor="hand2", command=_dismiss,
         ).pack(side="right", padx=6)
 
-    def _show_update_dialog(self, latest_ver: str, release_url: str):
-        """Show a popup with a direct Download button."""
+    def _show_update_dialog(self, latest_ver: str, release_url: str, download_url: str | None = None):
+        """Show a popup with Download & Install (or browser fallback)."""
         win = tk.Toplevel(self)
         win.title("Update Available")
         win.resizable(False, False)
@@ -378,15 +378,42 @@ class App(tk.Tk):
         tk.Label(info, text=f"  Current :  v{VERSION}", bg=C_BG, fg=C_DIM,
                  font=("Segoe UI", 9), anchor="w").pack(fill="x")
 
+        # Progress area — hidden until download starts
+        prog_frame = tk.Frame(win, bg=C_BG)
+        progress_var = tk.IntVar(value=0)
+        ttk.Progressbar(
+            prog_frame, variable=progress_var, maximum=100, length=260
+        ).pack(fill="x", pady=(0, 4))
+        status_lbl = tk.Label(
+            prog_frame, text="", bg=C_BG, fg=C_DIM, font=("Segoe UI", 8)
+        )
+        status_lbl.pack()
+
         btns = tk.Frame(win, bg=C_BG)
         btns.pack(pady=(6, 16), padx=20)
 
-        tk.Button(
-            btns, text="Download", bg=C_ACCENT, fg="white",
-            relief="flat", font=("Segoe UI", 9, "bold"),
-            padx=16, pady=6, cursor="hand2",
-            command=lambda: [webbrowser.open(release_url), win.destroy()],
-        ).pack(side="left", padx=(0, 8))
+        can_self_update = download_url and hasattr(sys, "_MEIPASS")
+        if can_self_update:
+            btn_install = tk.Button(
+                btns, text="⬇  Download & Install", bg=C_ACCENT, fg="white",
+                relief="flat", font=("Segoe UI", 9, "bold"),
+                padx=16, pady=6, cursor="hand2",
+            )
+            btn_install.pack(side="left", padx=(0, 8))
+
+            def _start_install():
+                prog_frame.pack(padx=20, pady=(0, 8), before=btns, fill="x")
+                win.update_idletasks()
+                self._do_self_update(download_url, win, btn_install, status_lbl, progress_var)
+
+            btn_install.config(command=_start_install)
+        else:
+            tk.Button(
+                btns, text="Download", bg=C_ACCENT, fg="white",
+                relief="flat", font=("Segoe UI", 9, "bold"),
+                padx=16, pady=6, cursor="hand2",
+                command=lambda: [webbrowser.open(release_url), win.destroy()],
+            ).pack(side="left", padx=(0, 8))
 
         tk.Button(
             btns, text="Later", bg=C_BG, fg=C_DIM,
@@ -399,6 +426,71 @@ class App(tk.Tk):
         x = self.winfo_x() + (self.winfo_width() - win.winfo_width()) // 2
         y = self.winfo_y() + (self.winfo_height() - win.winfo_height()) // 2
         win.geometry(f"+{x}+{y}")
+
+    def _do_self_update(self, download_url: str, win: tk.Toplevel,
+                        btn_install, status_lbl, progress_var):
+        """Download new EXE to a temp file, then replace self via a detached batch script."""
+        import tempfile
+        current_exe = Path(sys.executable)
+        new_exe = current_exe.parent / (current_exe.stem + "_update.exe")
+
+        def _download():
+            try:
+                self.after(0, lambda: btn_install.config(
+                    state="disabled", text="Downloading..."))
+                req = urllib.request.Request(
+                    download_url,
+                    headers={"User-Agent": f"ClassEdge-LMS/{VERSION}"},
+                )
+                with urllib.request.urlopen(req, timeout=120) as resp:
+                    total = int(resp.headers.get("Content-Length", 0))
+                    downloaded = 0
+                    with open(new_exe, "wb") as f:
+                        while True:
+                            chunk = resp.read(65536)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            if total:
+                                pct = int(downloaded / total * 100)
+                                self.after(0, lambda p=pct: progress_var.set(p))
+                                self.after(0, lambda p=pct: status_lbl.config(
+                                    text=f"Downloading...  {p}%"))
+                self.after(0, lambda: status_lbl.config(
+                    text="Applying update — app will restart shortly..."))
+                self.after(800, _apply_update)
+            except Exception as exc:
+                if new_exe.exists():
+                    try:
+                        new_exe.unlink()
+                    except Exception:
+                        pass
+                self.after(0, lambda: messagebox.showerror(
+                    "Update Failed", f"Could not download update:\n{exc}"))
+                self.after(0, lambda: btn_install.config(
+                    state="normal", text="⬇  Download & Install"))
+                self.after(0, lambda: status_lbl.config(text=""))
+
+        def _apply_update():
+            bat = Path(tempfile.gettempdir()) / "classedge_update.bat"
+            bat.write_text(
+                "@echo off\n"
+                "ping -n 4 127.0.0.1 > nul\n"
+                f'move /y "{new_exe}" "{current_exe}"\n'
+                f'start "" "{current_exe}"\n'
+                'del "%~f0"\n',
+                encoding="utf-8",
+            )
+            subprocess.Popen(
+                ["cmd.exe", "/c", str(bat)],
+                creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                close_fds=True,
+            )
+            self.destroy()
+            sys.exit(0)
+
+        threading.Thread(target=_download, daemon=True).start()
 
     def cmd_check_updates(self):
         """Manual: check for updates and show result."""
@@ -417,9 +509,15 @@ class App(tk.Tk):
                     self.after(0, lambda: messagebox.showinfo(
                         "Check for Updates", "Could not determine latest version."))
                     return
+                assets = data.get("assets", [])
+                download_url = next(
+                    (a["browser_download_url"] for a in assets
+                     if a.get("name", "").endswith(".exe")),
+                    None,
+                )
                 if _parse_version(tag) > _parse_version(VERSION):
                     self.after(0, lambda: self._show_update_banner(tag, release_url))
-                    self.after(0, lambda: self._show_update_dialog(tag, release_url))
+                    self.after(0, lambda: self._show_update_dialog(tag, release_url, download_url))
                 else:
                     self.after(0, lambda: messagebox.showinfo(
                         "Check for Updates",
