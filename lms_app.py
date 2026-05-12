@@ -45,7 +45,7 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 VERSION = "1.1.8"
 
 # GitHub repo used for update checks (format: "owner/repo")
-GITHUB_REPO = "jasgie/lms-automation"
+GITHUB_REPO = "jasgie/lms_automation"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Paths
@@ -402,7 +402,7 @@ class App(tk.Tk):
         self._sidebar.pack(side="left", fill="y")
         self._sidebar.pack_propagate(False)
 
-        # Logo / title
+        # Logo / title (fixed, not scrollable)
         tk.Label(
             self._sidebar, text="ClassEdge", bg=C_SIDEBAR, fg="white",
             font=("Segoe UI", 14, "bold"), pady=12
@@ -417,6 +417,40 @@ class App(tk.Tk):
         ).pack(fill="x", padx=14)
 
         self._sep(self._sidebar)
+
+        # Scrollable canvas for buttons
+        canvas = tk.Canvas(
+            self._sidebar, bg=C_SIDEBAR, highlightthickness=0, bd=0
+        )
+        scrollbar = tk.Scrollbar(
+            self._sidebar, orient="vertical", command=canvas.yview,
+            bg=C_SIDEBAR, troughcolor=C_SIDEBAR, activebackground=C_SIDEBAR2,
+            width=6,
+        )
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Scrollbar only appears when needed; pack canvas to fill remaining space
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Inner frame inside canvas holds the actual buttons
+        inner = tk.Frame(canvas, bg=C_SIDEBAR)
+        inner_id = canvas.create_window((0, 0), window=inner, anchor="nw")
+
+        def _on_inner_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        def _on_canvas_configure(event):
+            canvas.itemconfig(inner_id, width=event.width)
+
+        inner.bind("<Configure>", _on_inner_configure)
+        canvas.bind("<Configure>", _on_canvas_configure)
+
+        # Mouse-wheel scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
         ITEMS = [
             ("setup",     "⚙   First-Time Setup",     self.cmd_setup,        True),
@@ -443,11 +477,11 @@ class App(tk.Tk):
 
         for key, label, cmd, is_primary in ITEMS:
             if key is None:
-                self._sep(self._sidebar)
+                self._sep(inner)
                 continue
             bg = C_ACCENT if is_primary else C_SIDEBAR
             btn = tk.Button(
-                self._sidebar, text=label, command=cmd,
+                inner, text=label, command=cmd,
                 bg=bg, fg="white", activebackground=C_SIDEBAR2,
                 activeforeground="white", relief="flat",
                 anchor="w", padx=14, pady=7,
