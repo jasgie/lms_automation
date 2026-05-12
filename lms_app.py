@@ -42,7 +42,7 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 # Version  (bump this string when distributing a new build)
 # ─────────────────────────────────────────────────────────────────────────────
 
-VERSION = "1.1.10"
+VERSION = "1.1.11"
 
 # GitHub repo used for update checks (format: "owner/repo")
 GITHUB_REPO = "jasgie/lms_automation"
@@ -353,6 +353,53 @@ class App(tk.Tk):
             cursor="hand2", command=_dismiss,
         ).pack(side="right", padx=6)
 
+    def _show_update_dialog(self, latest_ver: str, release_url: str):
+        """Show a popup with a direct Download button."""
+        win = tk.Toplevel(self)
+        win.title("Update Available")
+        win.resizable(False, False)
+        win.grab_set()
+        win.configure(bg=C_BG)
+        try:
+            win.iconbitmap(str(ICON_PATH))
+        except Exception:
+            pass
+
+        tk.Label(
+            win, text="🔔  A new version is available!",
+            bg=C_BG, fg=C_DARK, font=("Segoe UI", 11, "bold"),
+            pady=14, padx=20,
+        ).pack()
+
+        info = tk.Frame(win, bg=C_BG)
+        info.pack(padx=20, pady=(0, 10))
+        tk.Label(info, text=f"  Latest  :  v{latest_ver}", bg=C_BG, fg=C_DARK,
+                 font=("Segoe UI", 9), anchor="w").pack(fill="x")
+        tk.Label(info, text=f"  Current :  v{VERSION}", bg=C_BG, fg=C_DIM,
+                 font=("Segoe UI", 9), anchor="w").pack(fill="x")
+
+        btns = tk.Frame(win, bg=C_BG)
+        btns.pack(pady=(6, 16), padx=20)
+
+        tk.Button(
+            btns, text="Download", bg=C_ACCENT, fg="white",
+            relief="flat", font=("Segoe UI", 9, "bold"),
+            padx=16, pady=6, cursor="hand2",
+            command=lambda: [webbrowser.open(release_url), win.destroy()],
+        ).pack(side="left", padx=(0, 8))
+
+        tk.Button(
+            btns, text="Later", bg=C_BG, fg=C_DIM,
+            relief="flat", font=("Segoe UI", 9),
+            padx=12, pady=6, cursor="hand2",
+            command=win.destroy,
+        ).pack(side="left")
+
+        win.update_idletasks()
+        x = self.winfo_x() + (self.winfo_width() - win.winfo_width()) // 2
+        y = self.winfo_y() + (self.winfo_height() - win.winfo_height()) // 2
+        win.geometry(f"+{x}+{y}")
+
     def cmd_check_updates(self):
         """Manual: check for updates and show result."""
         def _worker():
@@ -372,13 +419,7 @@ class App(tk.Tk):
                     return
                 if _parse_version(tag) > _parse_version(VERSION):
                     self.after(0, lambda: self._show_update_banner(tag, release_url))
-                    self.after(0, lambda: messagebox.showinfo(
-                        "Update Available",
-                        f"A new version is available!\n\n"
-                        f"  Latest  : v{tag}\n"
-                        f"  Current : v{VERSION}\n\n"
-                        "Click 'Download' in the banner at the top to get it.",
-                    ))
+                    self.after(0, lambda: self._show_update_dialog(tag, release_url))
                 else:
                     self.after(0, lambda: messagebox.showinfo(
                         "Check for Updates",
