@@ -43,6 +43,8 @@ echo.
   --onefile ^
   --windowed ^
   --name "ClassEdge LMS" ^
+  --icon "classedge_lms.ico" ^
+  --add-data "classedge_lms.ico;." ^
   --add-data "lms_login_setup.py;." ^
   --add-data "lms_start_class.py;." ^
   --add-data "extract_schedule_web.py;." ^

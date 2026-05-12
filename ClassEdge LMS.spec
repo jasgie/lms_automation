@@ -5,7 +5,7 @@ a = Analysis(
     ['lms_app.py'],
     pathex=[],
     binaries=[],
-    datas=[('lms_login_setup.py', '.'), ('lms_start_class.py', '.'), ('extract_schedule_web.py', '.'), ('extract_schedule.py', '.'), ('setup_tasks.py', '.'), ('create_lesson_folders.py', '.'), ('upload_lessons.py', '.')],
+    datas=[('classedge_lms.ico', '.'), ('lms_login_setup.py', '.'), ('lms_start_class.py', '.'), ('extract_schedule_web.py', '.'), ('extract_schedule.py', '.'), ('setup_tasks.py', '.'), ('create_lesson_folders.py', '.'), ('upload_lessons.py', '.')],
     hiddenimports=['tkinter', 'tkinter.scrolledtext', 'tkinter.ttk'],
     hookspath=[],
     hooksconfig={},
@@ -35,4 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['classedge_lms.ico'],
 )
