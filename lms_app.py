@@ -42,7 +42,7 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 # Version  (bump this string when distributing a new build)
 # ─────────────────────────────────────────────────────────────────────────────
 
-VERSION = "1.1.8"
+VERSION = "1.1.9"
 
 # GitHub repo used for update checks (format: "owner/repo")
 GITHUB_REPO = "jasgie/lms_automation"
