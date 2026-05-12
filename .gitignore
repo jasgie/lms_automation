@@ -1,0 +1,14 @@
+# Sensitive authentication data - never commit this
+auth.json
+
+# Debug output
+debug/
+
+# Build artifacts
+build/
+dist/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
