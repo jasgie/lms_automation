@@ -1,0 +1,114 @@
+[
+  {
+    "name": "Sat_0915_Capstone_Lec",
+    "subject": "Capstone Project 1",
+    "kind": "LEC",
+    "day": "SAT",
+    "trigger_time": "09:15",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/331/?semester="
+  },
+  {
+    "name": "Fri_0715_Computer_Lec",
+    "subject": "Computer Programming 2",
+    "kind": "LEC",
+    "day": "FRI",
+    "trigger_time": "07:15",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/348/?semester="
+  },
+  {
+    "name": "Mon_0915_Computer_Lab",
+    "subject": "Computer Programming 2",
+    "kind": "LAB",
+    "day": "MON",
+    "trigger_time": "09:15",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/351/?semester="
+  },
+  {
+    "name": "Mon_0715_Computer_Lec",
+    "subject": "Computer Programming 2",
+    "kind": "LEC",
+    "day": "MON",
+    "trigger_time": "07:15",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/379/?semester="
+  },
+  {
+    "name": "Mon_1315_Computer_Lab",
+    "subject": "Computer Programming 2",
+    "kind": "LAB",
+    "day": "MON",
+    "trigger_time": "13:15",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/387/?semester="
+  },
+  {
+    "name": "Sun_0715_Computer_Lab",
+    "subject": "Computer Programming 2",
+    "kind": "LAB",
+    "day": "SUN",
+    "trigger_time": "07:15",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/439/?semester="
+  },
+  {
+    "name": "Tue_0715_Computer_Lec",
+    "subject": "Computer Programming 2",
+    "kind": "LEC",
+    "day": "TUE",
+    "trigger_time": "07:15",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/534/?semester="
+  },
+  {
+    "name": "Tue_0915_Computer_Lab",
+    "subject": "Computer Programming 2",
+    "kind": "LAB",
+    "day": "TUE",
+    "trigger_time": "09:15",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/535/?semester="
+  },
+  {
+    "name": "Tue_1315_Computer_Lab",
+    "subject": "Computer Programming 2",
+    "kind": "LAB",
+    "day": "TUE",
+    "trigger_time": "13:15",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/539/?semester="
+  },
+  {
+    "name": "Sat_1645_Fundamenta_Lec",
+    "subject": "Fundamentals of Information Systems",
+    "kind": "LEC",
+    "day": "SAT",
+    "trigger_time": "16:45",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/285/?semester="
+  },
+  {
+    "name": "Sat_1645_Fundamenta_Lab",
+    "subject": "Fundamentals of Information Systems",
+    "kind": "LAB",
+    "day": "SAT",
+    "trigger_time": "16:45",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/465/?semester="
+  },
+  {
+    "name": "Thu_1345_Teaching_Lec",
+    "subject": "Teaching Common Competencies in ICT",
+    "kind": "LEC",
+    "day": "THU",
+    "trigger_time": "13:45",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/330/?semester="
+  },
+  {
+    "name": "Sat_1245_Web_Lec",
+    "subject": "Web Design",
+    "kind": "LEC",
+    "day": "SAT",
+    "trigger_time": "12:45",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/253/?semester="
+  },
+  {
+    "name": "Sun_1245_Web_Lab",
+    "subject": "Web Design",
+    "kind": "LAB",
+    "day": "SUN",
+    "trigger_time": "12:45",
+    "url": "https://classedge.hccci.edu.ph/subjectDetail/286/?semester="
+  }
+]

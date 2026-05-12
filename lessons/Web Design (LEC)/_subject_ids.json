@@ -1,0 +1,11 @@
+{
+  "subject": "Web Design",
+  "kind": "LEC",
+  "subject_ids": [
+    "253"
+  ],
+  "sections": [
+    "SAT 12:45"
+  ],
+  "note": "These are the ClassEdge subject IDs this folder uploads to. Do not delete. Re-run create_lesson_folders.py to update."
+}

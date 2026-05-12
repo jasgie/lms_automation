@@ -1,0 +1,35 @@
+HOW TO ADD LESSONS TO THIS FOLDER
+==================================
+
+DROP your lesson files (PDF, PPTX, DOCX, etc.) into this folder.
+
+NAMING CONVENTION
+-----------------
+Use this format for the best results:
+
+   01 - Lesson Title Here.pdf
+   02 - Next Lesson.pptx
+   Week 3 - Topic Name.pdf
+
+The number at the start becomes the lesson order (Week/sequence).
+The text after " - " becomes the lesson title on ClassEdge.
+
+You can also just use plain filenames:
+   Introduction to Programming.pdf     ← title = "Introduction to Programming"
+
+EXAMPLES
+--------
+   01 - Introduction to HTML.pdf
+   02 - CSS Basics.pptx
+   03 - JavaScript Fundamentals.docx
+   Week 4 - Responsive Design.pdf
+
+SUPPORTED FILE TYPES
+---------------------
+.pdf  .pptx  .ppt  .docx  .doc  .xlsx  .xls  .mp4  .zip  .png  .jpg
+
+NOTES
+-----
+- Files that start with "_" are ignored (config files, etc.)
+- Files already uploaded will NOT be uploaded again.
+- After dropping files here, run:  UPLOAD_LESSONS.bat

@@ -1,0 +1,11 @@
+{
+  "subject": "Capstone Project 1",
+  "kind": "LEC",
+  "subject_ids": [
+    "331"
+  ],
+  "sections": [
+    "SAT 09:15"
+  ],
+  "note": "These are the ClassEdge subject IDs this folder uploads to. Do not delete. Re-run create_lesson_folders.py to update."
+}

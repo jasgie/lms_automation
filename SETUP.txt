@@ -1,0 +1,127 @@
+================================================================
+  ClassEdge LMS — Auto Start Class
+  Setup Guide for Teachers
+================================================================
+
+WHAT THIS DOES
+--------------
+This tool automatically clicks the "Start Class" button on the
+ClassEdge LMS for each of your scheduled classes. It runs in the
+background using Windows Task Scheduler.
+
+If your laptop was off at the trigger time, it will run
+automatically as soon as you open and log into your laptop.
+
+
+REQUIREMENTS
+------------
+- Windows laptop
+- Python 3.10 or newer  →  https://www.python.org/downloads/
+  (tick "Add Python to PATH" during install)
+- Your schedule .docx file (the one downloaded from ClassEdge
+  with the hyperlinks to your subjects)
+
+
+FIRST-TIME SETUP
+----------------
+
+Just double-click:  SETUP.bat
+
+That's it. It will:
+  1. Check that Python is installed
+  2. Create a virtual environment
+  3. Install all required packages
+  4. Install the Playwright Chromium browser
+  5. Open a browser for you to log in with your Microsoft 365 account
+  6. Read your class schedule from ClassEdge automatically
+  7. Register all your classes in Windows Task Scheduler
+
+Total time: about 3-5 minutes (most of it is downloading Chromium).
+
+REQUIREMENTS before running SETUP.bat
+  - Python 3.10 or newer must be installed:
+      https://www.python.org/downloads/
+    (During install, tick "Add Python to PATH")
+  - Internet connection
+
+
+DAILY USE
+---------
+Nothing to do. Just open your laptop and log in.
+
+- If your laptop is already on before class: task runs at trigger time.
+- If you open your laptop after trigger time: task runs immediately
+  upon login (as long as it is within 75 minutes of trigger time).
+- A popup notification confirms when "Start Class" was clicked.
+- A log file (start_class.log) records every action.
+
+
+SESSION EXPIRY
+--------------
+Your Microsoft 365 session saved in auth.json will expire after
+several days or weeks. When you see this in the log:
+
+  ERROR: Session expired.
+
+Just re-run Step 4:
+  python lms_login_setup.py
+
+
+MANAGING TASKS
+--------------
+List all registered tasks:
+  python setup_tasks.py --list
+
+Remove all tasks (e.g., end of semester):
+  python setup_tasks.py --delete
+
+Update your schedule (e.g., new semester):
+  Double-click UPDATE.bat — it re-reads your schedule from ClassEdge
+  and re-registers all tasks automatically.
+
+
+FILES IN THIS FOLDER
+--------------------
+  SETUP.bat                — Double-click to do the full first-time setup
+  UPDATE.bat               — Double-click to update schedule each semester
+  lms_login_setup.py       — Save your login session (run once / on expiry)
+  lms_start_class.py       — The automation script (called by Task Scheduler)
+  extract_schedule_web.py  — Scrapes ClassEdge SubjectList → generates schedule.json
+  extract_schedule.py      — Alternative: reads from a local schedule .docx file
+  setup_tasks.py           — Registers all tasks in Windows Task Scheduler
+  schedule.json            — Your personal class schedule (auto-generated)
+  auth.json                — Your saved browser session (keep this private!)
+  start_class.log          — Log of every automation run
+  launchers/               — Auto-generated .bat files (do not delete)
+  errors/                  — Screenshots taken when an error occurs (timestamped)
+  debug/                   — Screenshots/HTML snapshots (safe to delete)
+
+
+IMPORTANT — KEEP auth.json PRIVATE
+------------------------------------
+auth.json contains your login session cookies. Do NOT share it
+with anyone. Do NOT upload it to OneDrive shared folders or email.
+Each teacher must generate their own auth.json.
+
+
+TROUBLESHOOTING
+---------------
+"auth.json not found"
+  → Run lms_login_setup.py to save your session.
+
+"Could not find Start Class button"
+  → The browser window stays open for 30 seconds so you can
+    check manually. The page layout may have changed — contact
+    the tool author.
+  → A screenshot is saved automatically to the errors/ folder
+    with a timestamp (e.g., errors/20260510_143022_button_not_found.png).
+
+"Session expired"
+  → Re-run lms_login_setup.py to refresh your session.
+
+"Task does not run"
+  → Make sure your laptop is logged in (not just on the lock screen).
+  → Check Task Scheduler: search "Task Scheduler" in Start menu,
+    look under Task Scheduler Library > LMS_ClassEdge.
+
+================================================================

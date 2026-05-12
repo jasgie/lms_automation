@@ -1,0 +1,15 @@
+{
+  "subject": "Computer Programming 2",
+  "kind": "LEC",
+  "subject_ids": [
+    "348",
+    "379",
+    "534"
+  ],
+  "sections": [
+    "FRI 07:15",
+    "MON 07:15",
+    "TUE 07:15"
+  ],
+  "note": "These are the ClassEdge subject IDs this folder uploads to. Do not delete. Re-run create_lesson_folders.py to update."
+}

@@ -1,0 +1,48 @@
+<form method="post" action="/create_lesson/331/" enctype="multipart/form-data">
+  <input type="hidden" name="csrfmiddlewaretoken" value="tImX6OdxDBiHSK9sM7rIWo5YwNIqWWcgtjeuK6fPfILxAJ6ueFWIf6aKFJmyAiqr" style="">
+
+  <!-- File name and Term in one row -->
+  <div class="row">
+    <div class="col-md-6">
+      <div class="form-group">
+        <label for="file_name">Name:</label>
+        <input type="text" name="file_name" class="form-control" maxlength="100" required="" id="id_file_name" style="">
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="form-group">
+        <label for="term">Term:</label>
+        <select name="term" class="form-control select2 select2-hidden-accessible" title="Select Term" id="id_term" data-select2-id="select2-data-id_term" tabindex="-1" aria-hidden="true">
+  <option value="3" data-select2-id="select2-data-2-ec9f">Midterm - 2026-01-05 - 2026-05-22</option>
+
+  <option value="5">Final Term - 2026-01-05 - 2026-05-22</option>
+
+</select><span class="select2 select2-container select2-container--bootstrap-5" dir="ltr" data-select2-id="select2-data-1-rc25" style="width: 276.656px;"><span class="selection"><span class="select2-selection select2-selection--single select2-selection--clearable" role="combobox" aria-haspopup="true" aria-expanded="false" title="Select Term" tabindex="0" aria-disabled="false" aria-labelledby="select2-id_term-container" aria-controls="select2-id_term-container"><button type="button" class="select2-selection__clear" tabindex="-1" title="Remove all items" aria-label="Remove all items" aria-describedby="select2-id_term-container" data-select2-id="select2-data-3-lalr"><span aria-hidden="true">×</span></button><span class="select2-selection__rendered" id="select2-id_term-container" role="textbox" aria-readonly="true" title="Midterm - 2026-01-05 - 2026-05-22">Midterm - 2026-01-05 - 2026-05-22</span><span class="select2-selection__arrow" role="presentation"><b role="presentation"></b></span></span></span><span class="dropdown-wrapper" aria-hidden="true"></span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- File upload -->
+  <div class="form-group">
+    <label for="customFile">File:</label>
+    <div id="dropzone" class="custom-dropzone">
+      <div id="filePreview" class="file-preview">
+        <p id="dropzone-text" class="text-body">Drag and drop a file here or click to select</p>
+      </div>
+      <input type="file" id="fileInput" name="file" style="display: none;">
+    </div>
+    <small class="form-text text-muted">Allowed file types: PDF, JPG, JPEG, PNG, MP4, AVI, MOV, WMV (Max size: 25MB)</small>
+    <div class="invalid-feedback" id="file-error" style="display: none;"></div>
+  </div>
+
+  <!-- Select multiple users -->
+ <div class="form-group">
+  <label for="display_lesson_for_selected_users">
+    Display lesson for selected users: (leave empty to display to all students)
+  </label>
+  <div class="mb-2">
+    <button type="button" id="selectAllStudents" class="btn btn-sm btn-outline-primary">
+      <svg class="svg-inline--fa fa-check-double fa-w-16" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="check-double" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M505 174.8l-39.6-39.6c-9.4-9.4-24.6-9.4-33.9 0L192 374.7 80.6 263.2c-9.4-9.4-24.6-9.4-33.9 0L7 302.9c-9.4 9.4-9.4 24.6 0 34L175 505c9.4 9.4 24.6 9.4 33.9 0l296-296.2c9.4-9.5 9.4-24.7.1-34zm-324.3 106c6.2 6.3 16.4 6.3 22.6 0l208-208.2c6.2-6.3 6.2-16.4 0-22.6L366.1 4.7c-6.2-6.3-16.4-6.3-22.6 0L192 156.2l-55.4-55.5c-6.2-6.3-16.4-6.3-22.6 0L68.7 146c-6.2 6.3-6.2 16.4 0 22.6l112 112.2z"></path></svg><!-- <i class="fas fa-check-double"></i> Font Awesome fontawesome.com --> Select All
+    </button>
+    <button type="button" id="clearAllStudents" class="btn btn-sm btn-outline-secondary ms-2">
+      <svg class="svg-inline--fa fa-times fa-w-11" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" role="img" xmlns="http://www.w
