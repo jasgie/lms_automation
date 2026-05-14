@@ -178,8 +178,62 @@ def start_class(url: str, scheduled_time: str = ""):
             browser.close()
             return
 
-        # --- Handle possible confirmation modal ---
+        # --- Handle possible confirmation modal or error dialog ---
         page.wait_for_timeout(1_500)
+
+        # ERROR_SELECTORS: modals that indicate the action failed.
+        # Check BEFORE trying to confirm so we don't mistake an error OK for a confirm.
+        ERROR_INDICATORS = [
+            # Text patterns that signal an error dialog is visible
+            "text=Oops",
+            "text=Something went wrong",
+            "text=Error",
+            "text=Failed",
+            "text=not valid JSON",
+            "text=Unexpected token",
+            "text=Internal Server Error",
+            "text=500",
+        ]
+        error_detected = False
+        error_text = ""
+        for sel in ERROR_INDICATORS:
+            try:
+                el = page.locator(sel).first
+                if el.is_visible(timeout=500):
+                    # Try to grab the full modal text for logging
+                    try:
+                        # Walk up to a container to get more context
+                        container = page.locator(".swal2-popup, .modal-content, [role='dialog'], [role='alertdialog']").first
+                        if container.is_visible(timeout=300):
+                            error_text = container.inner_text().strip()
+                        else:
+                            error_text = el.inner_text().strip()
+                    except Exception:
+                        error_text = sel
+                    error_detected = True
+                    break
+            except Exception:
+                continue
+
+        if error_detected:
+            log(f"ERROR: Server returned an error after clicking Start Class. Modal text: {repr(error_text)}")
+            screenshot_error(page, "start_class_server_error")
+            # Dismiss the error dialog if possible
+            for dismiss_sel in ["button:has-text('OK')", "button:has-text('Close')", ".swal2-confirm"]:
+                try:
+                    btn = page.locator(dismiss_sel).first
+                    if btn.is_visible(timeout=500):
+                        btn.click()
+                        break
+                except Exception:
+                    continue
+            notify("LMS Error: Start Class Failed",
+                   f"The server returned an error. Check start_class.log for details.")
+            page.wait_for_timeout(4_000)
+            browser.close()
+            sys.exit(1)
+
+        # No error — handle a legitimate confirmation dialog (if any)
         CONFIRM_SELECTORS = [
             "button:has-text('Confirm')",
             "button:has-text('Yes')",
@@ -194,6 +248,35 @@ def start_class(url: str, scheduled_time: str = ""):
                     log(f"Confirmed dialog via: {sel}")
                     break
             except PlaywrightTimeout:
+                continue
+
+        # Wait briefly then do a final error check in case the confirmation itself triggered an error
+        page.wait_for_timeout(1_500)
+        for sel in ERROR_INDICATORS:
+            try:
+                el = page.locator(sel).first
+                if el.is_visible(timeout=500):
+                    try:
+                        container = page.locator(".swal2-popup, .modal-content, [role='dialog'], [role='alertdialog']").first
+                        error_text = container.inner_text().strip() if container.is_visible(timeout=300) else el.inner_text().strip()
+                    except Exception:
+                        error_text = sel
+                    log(f"ERROR: Server returned an error after confirmation. Modal text: {repr(error_text)}")
+                    screenshot_error(page, "start_class_post_confirm_error")
+                    for dismiss_sel in ["button:has-text('OK')", "button:has-text('Close')", ".swal2-confirm"]:
+                        try:
+                            btn = page.locator(dismiss_sel).first
+                            if btn.is_visible(timeout=500):
+                                btn.click()
+                                break
+                        except Exception:
+                            continue
+                    notify("LMS Error: Start Class Failed",
+                           f"The server returned an error. Check start_class.log for details.")
+                    page.wait_for_timeout(4_000)
+                    browser.close()
+                    sys.exit(1)
+            except Exception:
                 continue
 
         # Success

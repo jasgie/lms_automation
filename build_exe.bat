@@ -9,17 +9,26 @@ echo   ClassEdge LMS ^| Build EXE
 echo ================================================================
 echo.
 
-:: Check venv exists
-if not exist ".venv\Scripts\python.exe" (
-    echo ERROR: .venv not found.
+:: Locate venv — prefer local .venv, fall back to AppData install
+set "VENV_DIR=%~dp0.venv"
+if not exist "%VENV_DIR%\Scripts\python.exe" (
+    set "VENV_DIR=%LOCALAPPDATA%\ClassEdge LMS\.venv"
+)
+if not exist "%VENV_DIR%\Scripts\python.exe" (
+    echo ERROR: Virtual environment not found.
+    echo Expected at one of:
+    echo   %~dp0.venv
+    echo   %LOCALAPPDATA%\ClassEdge LMS\.venv
     echo Run SETUP.bat first to create the virtual environment.
     pause
     exit /b 1
 )
+echo Using venv: %VENV_DIR%
+echo.
 
 :: Install/upgrade PyInstaller
 echo [1/3]  Installing PyInstaller...
-".venv\Scripts\pip.exe" install --quiet --upgrade pyinstaller
+"%VENV_DIR%\Scripts\pip.exe" install --quiet --upgrade pyinstaller
 if %errorlevel% neq 0 (
     echo ERROR: Could not install PyInstaller.
     pause
@@ -39,7 +48,7 @@ echo.
 :: Build EXE
 echo [3/3]  Building EXE (this takes 1-2 minutes)...
 echo.
-".venv\Scripts\pyinstaller.exe" ^
+"%VENV_DIR%\Scripts\pyinstaller.exe" ^
   --onefile ^
   --windowed ^
   --name "ClassEdge LMS" ^

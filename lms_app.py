@@ -42,7 +42,7 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 # Version  (bump this string when distributing a new build)
 # ─────────────────────────────────────────────────────────────────────────────
 
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 
 # GitHub repo used for update checks (format: "owner/repo")
 GITHUB_REPO = "jasgie/lms_automation"
@@ -1318,6 +1318,38 @@ class App(tk.Tk):
         def p(t):   txt.insert("end", t + "\n")
         def tip(t): txt.insert("end", "💡 " + t + "\n", "tip")
         def nl():   txt.insert("end", "\n")
+
+        h1("🆕  What's New")
+        CHANGELOG = [
+            ("v1.3.1  (2026-05-14)", [
+                "Bug fix: 'Start Class' no longer reports SUCCESS when the LMS",
+                "  returns an error dialog (e.g. 'Oops… Unexpected token').  The",
+                "  automation now detects error modals BEFORE treating any 'OK'",
+                "  button as a confirmation, logs the failure, takes an error",
+                "  screenshot, and sends a 'Start Class Failed' notification.",
+            ]),
+            ("v1.3.0", [
+                "Added scrollable sidebar so all buttons are reachable on small screens.",
+                "Added ⚠️ Open Errors Folder shortcut in sidebar.",
+                "Upload Lessons: skip already-uploaded files to avoid duplicates.",
+                "Task Scheduler: tasks now use 'Run as soon as possible after missed start'.",
+            ]),
+            ("v1.2.0", [
+                "Automated lesson upload with Midterm / Final Term selector.",
+                "Create Lesson Folders generates subject subfolders from schedule.",
+                "How-To Guide added (this window).",
+            ]),
+            ("v1.1.0", [
+                "Login session now waits for dashboard before saving — fixes",
+                "  browser closing too early during MFA.",
+                "Start Class log viewer with filter by Success / Error / Warning.",
+            ]),
+        ]
+        for ver, notes in CHANGELOG:
+            txt.insert("end", f"  {ver}\n", "h2")
+            for note in notes:
+                p(f"    • {note}")
+            nl()
 
         h1("🚀  First-Time Setup  (Do this once)")
         for i, step in enumerate([
