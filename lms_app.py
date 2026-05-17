@@ -42,7 +42,7 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 # Version  (bump this string when distributing a new build)
 # ─────────────────────────────────────────────────────────────────────────────
 
-VERSION = "1.3.1"
+VERSION = "1.3.2"
 
 # GitHub repo used for update checks (format: "owner/repo")
 GITHUB_REPO = "jasgie/lms_automation"
@@ -1321,6 +1321,13 @@ class App(tk.Tk):
 
         h1("🆕  What's New")
         CHANGELOG = [
+            ("v1.3.2  (2026-05-17)", [
+                "When 'Start Class' button is not found, the app now checks for",
+                "  an 'End Class' button. If found, it means class is already",
+                "  running — it reads the on-screen timer, deducts the elapsed",
+                "  time from now, and notifies 'Class already started at HH:MM'",
+                "  instead of leaving the browser open for 30 seconds.",
+            ]),
             ("v1.3.1  (2026-05-14)", [
                 "Bug fix: 'Start Class' no longer reports SUCCESS when the LMS",
                 "  returns an error dialog (e.g. 'Oops… Unexpected token').  The",

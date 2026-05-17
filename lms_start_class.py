@@ -9,6 +9,7 @@ Usage:
 """
 
 import argparse
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -169,6 +170,120 @@ def start_class(url: str, scheduled_time: str = ""):
                 continue
 
         if not clicked:
+            # --- Check if class is already running (End Class button visible) ---
+            END_CLASS_SELECTORS = [
+                "button:has-text('End Class')",
+                "a:has-text('End Class')",
+                "input[value*='End Class']",
+                "[class*='end-class']",
+                "[id*='end-class']",
+                "[class*='endClass']",
+            ]
+            end_btn_found = False
+            for sel in END_CLASS_SELECTORS:
+                try:
+                    btn = page.locator(sel).first
+                    if btn.is_visible(timeout=2_000):
+                        end_btn_found = True
+                        break
+                except Exception:
+                    continue
+
+            if end_btn_found:
+                # Try to read the running timer from the page.
+                # ClassEdge typically shows something like "01:23:45" or "45 min"
+                # Try common timer/duration element patterns.
+                TIMER_SELECTORS = [
+                    "[class*='timer']",
+                    "[class*='duration']",
+                    "[class*='elapsed']",
+                    "[class*='running']",
+                    "[class*='class-time']",
+                    "[class*='classTime']",
+                    "[id*='timer']",
+                    "[id*='duration']",
+                    "[id*='elapsed']",
+                ]
+                # Also scan all visible text for HH:MM:SS / H:MM:SS / MM:SS patterns
+                elapsed_seconds = None
+                timer_raw = ""
+
+                for sel in TIMER_SELECTORS:
+                    try:
+                        el = page.locator(sel).first
+                        if el.is_visible(timeout=500):
+                            timer_raw = el.inner_text().strip()
+                            if timer_raw:
+                                break
+                    except Exception:
+                        continue
+
+                # If no dedicated element found, search page body text
+                if not timer_raw:
+                    try:
+                        body_text = page.locator("body").inner_text()
+                        # Look for HH:MM:SS or H:MM:SS or MM:SS
+                        m = re.search(r'\b(\d{1,2}):(\d{2}):(\d{2})\b', body_text)
+                        if m:
+                            timer_raw = m.group(0)
+                        else:
+                            # Look for "X hour(s) Y min(s)" patterns
+                            m2 = re.search(
+                                r'(\d+)\s*h(?:our)?s?\s*(\d+)\s*m(?:in)?',
+                                body_text, re.IGNORECASE
+                            )
+                            if m2:
+                                timer_raw = f"{m2.group(1)}h {m2.group(2)}m"
+                            else:
+                                m3 = re.search(r'(\d+)\s*m(?:in(?:ute)?s?)?', body_text, re.IGNORECASE)
+                                if m3:
+                                    timer_raw = f"{m3.group(1)} min"
+                    except Exception:
+                        pass
+
+                # Parse timer_raw → elapsed_seconds
+                if timer_raw:
+                    # HH:MM:SS or H:MM:SS
+                    m = re.match(r'^(\d{1,2}):(\d{2}):(\d{2})$', timer_raw)
+                    if m:
+                        elapsed_seconds = int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
+                    else:
+                        # MM:SS
+                        m = re.match(r'^(\d{1,2}):(\d{2})$', timer_raw)
+                        if m:
+                            elapsed_seconds = int(m.group(1)) * 60 + int(m.group(2))
+                        else:
+                            # "Xh Ym"
+                            m = re.match(r'(\d+)h\s*(\d+)m', timer_raw)
+                            if m:
+                                elapsed_seconds = int(m.group(1)) * 3600 + int(m.group(2)) * 60
+                            else:
+                                # "X min"
+                                m = re.match(r'(\d+)\s*min', timer_raw, re.IGNORECASE)
+                                if m:
+                                    elapsed_seconds = int(m.group(1)) * 60
+
+                now = datetime.now()
+                if elapsed_seconds is not None:
+                    started_at = now - timedelta(seconds=elapsed_seconds)
+                    started_str = started_at.strftime("%I:%M %p")
+                    elapsed_str = str(timedelta(seconds=elapsed_seconds))  # H:MM:SS
+                    msg = (f"Class already started at {started_str} "
+                           f"(running {elapsed_str}, timer: {timer_raw}).")
+                    log(f"INFO: {msg}")
+                    notify("LMS: Class Already Running", msg)
+                else:
+                    now_str = now.strftime("%I:%M %p")
+                    msg = f"Class is already running as of {now_str} (no timer found on page)."
+                    log(f"INFO: {msg}")
+                    notify("LMS: Class Already Running", msg)
+
+                screenshot_error(page, "class_already_started")
+                page.wait_for_timeout(4_000)
+                browser.close()
+                return
+
+            # End Class button not found either — truly unknown state
             log("WARNING: 'Start Class' button not found. It may already be active, "
                 "or the page layout changed. Browser window left open for manual check.")
             screenshot_error(page, "button_not_found")
