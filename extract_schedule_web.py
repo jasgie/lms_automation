@@ -27,7 +27,7 @@ if hasattr(sys.stderr, "buffer"):
 AUTH_FILE     = Path(__file__).parent / "auth.json"
 OUTPUT        = Path(__file__).parent / "schedule.json"
 DEBUG_DIR     = Path(__file__).parent / "debug"
-SUBJECT_LIST  = "https://classedge.hccci.edu.ph/SubjectList/"
+SUBJECT_LIST  = "https://classedge.hccci.edu.ph/SubjectList/"  # LMS_SUBJECT_LIST_URL
 LEAD_MINUTES  = 15  # trigger this many minutes before class start
 
 DAY_ABBREV = {

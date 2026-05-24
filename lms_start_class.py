@@ -97,6 +97,30 @@ def check_deadline(scheduled_time: str) -> bool:
         return True  # bad format, proceed anyway
 
 
+# Login-page indicators visible in the screenshot (content-based detection)
+_LOGIN_CONTENT_SELECTORS = [
+    "button:has-text('Sign in with Microsoft Office 365')",
+    "a:has-text('Sign in with Microsoft Office 365')",
+    "button:has-text('Log in as Admin')",
+    "a:has-text('Log in as Admin')",
+]
+
+
+def is_login_page(page) -> bool:
+    """Return True if the current page is the LMS login / session-expired page."""
+    url = page.url.lower()
+    if "login" in url or "microsoftonline" in url or "oauth" in url:
+        return True
+    # Content-based: look for login-specific buttons that appear in the LMS login page
+    for sel in _LOGIN_CONTENT_SELECTORS:
+        try:
+            if page.locator(sel).first.is_visible(timeout=1_000):
+                return True
+        except Exception:
+            pass
+    return False
+
+
 def start_class(url: str, scheduled_time: str = ""):
     if not check_deadline(scheduled_time):
         sys.exit(0)
@@ -123,16 +147,15 @@ def start_class(url: str, scheduled_time: str = ""):
             browser.close()
             sys.exit(1)
 
-        # Detect session expiry (redirect to login)
-        current = page.url
-        if (
-            "login" in current.lower()
-            or "microsoftonline" in current.lower()
-            or "oauth" in current.lower()
-        ):
-            log("ERROR: Session expired. Re-run lms_login_setup.py to renew the session.")
+        # Detect session expiry — check URL *and* page content (login page may render
+        # at any URL when the stored session has expired).
+        if is_login_page(page):
+            log("ERROR: Session expired or not logged in. Re-run lms_login_setup.py to renew the session.")
             screenshot_error(page, "session_expired")
-            notify("LMS Session Expired", "Please run lms_login_setup.py to re-login.")
+            notify(
+                "LMS Session Expired",
+                "Your session has expired. Please run lms_login_setup.py to log in again.",
+            )
             browser.close()
             sys.exit(1)
 

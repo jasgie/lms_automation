@@ -51,6 +51,28 @@ TERM_KEYWORDS = {
 
 BASE_URL = "https://classedge.hccci.edu.ph/create_lesson/{id}/"
 
+# Login-page indicators visible in the screenshot (content-based detection)
+_LOGIN_CONTENT_SELECTORS = [
+    "button:has-text('Sign in with Microsoft Office 365')",
+    "a:has-text('Sign in with Microsoft Office 365')",
+    "button:has-text('Log in as Admin')",
+    "a:has-text('Log in as Admin')",
+]
+
+
+def is_login_page(page) -> bool:
+    """Return True if the current page is the LMS login / session-expired page."""
+    url = page.url.lower()
+    if "login" in url or "microsoftonline" in url or "oauth" in url:
+        return True
+    for sel in _LOGIN_CONTENT_SELECTORS:
+        try:
+            if page.locator(sel).first.is_visible(timeout=1_000):
+                return True
+        except Exception:
+            pass
+    return False
+
 
 # ---------------------------------------------------------------------------
 # Logging & error screenshots
@@ -235,10 +257,9 @@ def upload_one(page, subject_id: str, lesson_file: Path, title: str,
         screenshot_error(page, f"timeout_id{subject_id}")
         return False
 
-    # Session expiry check
-    cur = page.url
-    if "login" in cur.lower() or "microsoftonline" in cur.lower():
-        log("  ERROR: Session expired. Re-run lms_login_setup.py to renew.")
+    # Session expiry check — URL *and* content (login page may appear at any URL)
+    if is_login_page(page):
+        log("  ERROR: Session expired or not logged in. Re-run lms_login_setup.py to renew.")
         screenshot_error(page, "session_expired")
         return False
 

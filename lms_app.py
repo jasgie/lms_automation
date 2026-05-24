@@ -42,7 +42,9 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 # Version  (bump this string when distributing a new build)
 # ─────────────────────────────────────────────────────────────────────────────
 
-VERSION = "1.3.2"
+VERSION      = "1.3.3"
+SCHOOL_SHORT = "HCCI"                                  # Short institution label
+SCHOOL_NAME  = "Holy Child Central Colleges, Inc."     # Full institution name
 
 # GitHub repo used for update checks (format: "owner/repo")
 GITHUB_REPO = "jasgie/lms_automation"
@@ -164,7 +166,7 @@ foreach ($dest in @('{_q(desktop / "ClassEdge LMS.lnk")}',
     for cmd in [
         f'reg add "{reg_key}" /v DisplayName      /t REG_SZ    /d "ClassEdge LMS Automation" /f',
         f'reg add "{reg_key}" /v DisplayVersion   /t REG_SZ    /d "{VERSION}"                /f',
-        f'reg add "{reg_key}" /v Publisher        /t REG_SZ    /d "HCCI"                     /f',
+        f'reg add "{reg_key}" /v Publisher        /t REG_SZ    /d "{SCHOOL_SHORT}"            /f',
         f'reg add "{reg_key}" /v InstallLocation  /t REG_SZ    /d "{str(INSTALL_DIR)}"        /f',
         f'reg add "{reg_key}" /v UninstallString  /t REG_SZ    /d "{exe_s} --uninstall"       /f',
         f'reg add "{reg_key}" /v NoModify         /t REG_DWORD /d 1                           /f',
@@ -896,7 +898,7 @@ class App(tk.Tk):
         messagebox.showinfo(
             "Save Login Session",
             "A browser window will open.\n\n"
-            "1. Log in with your HCCI Microsoft 365 account.\n"
+            f"1. Log in with your {SCHOOL_SHORT} Microsoft 365 account.\n"
             "2. Complete MFA if prompted.\n"
             "3. Once you reach the ClassEdge dashboard,\n"
             "   the session saves automatically.\n\n"
@@ -1293,7 +1295,7 @@ class App(tk.Tk):
             font=("Segoe UI", 13, "bold"), pady=12
         ).pack(fill="x", padx=18)
         tk.Label(
-            win, text=f"ClassEdge LMS Automation  ·  v{VERSION}  ·  HCCI",
+            win, text=f"ClassEdge LMS Automation  ·  v{VERSION}  ·  {SCHOOL_SHORT}",
             bg=C_BG, fg=C_DIM, font=("Segoe UI", 8)
         ).pack(fill="x", padx=18)
 
@@ -1362,7 +1364,7 @@ class App(tk.Tk):
         for i, step in enumerate([
             ("⚙  First-Time Setup",  "Click this button first. It installs Python packages and\n"
                                       "    the Chromium browser needed to automate ClassEdge."),
-            ("🔑  Save Login Session","A browser window opens. Log in with your HCCI Microsoft 365\n"
+            ("🔑  Save Login Session",f"A browser window opens. Log in with your {SCHOOL_SHORT} Microsoft 365\n"
                                       "    account (including MFA). The session saves automatically\n"
                                       "    once you reach your ClassEdge dashboard."),
             ("📅  Extract Schedule",  "The app reads your ClassEdge Subject List and builds a\n"
