@@ -42,7 +42,7 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 # Version  (bump this string when distributing a new build)
 # ─────────────────────────────────────────────────────────────────────────────
 
-VERSION      = "1.3.3"
+VERSION      = "1.3.4"
 SCHOOL_SHORT = "HCCI"                                  # Short institution label
 SCHOOL_NAME  = "Holy Child Central Colleges, Inc."     # Full institution name
 
@@ -253,13 +253,37 @@ def self_install(app: "App | None" = None):
                 messagebox.showinfo(
                     "Update Complete",
                     f"Updated to version {VERSION}.\n\n"
-                    "The app will now restart from the installed location.",
+                    "The app will now restart automatically.\n\n"
+                    "If it does not open within a few seconds, please launch\n"
+                    "ClassEdge LMS from your Desktop shortcut or Start Menu.",
                 )
-                app.destroy()
-                subprocess.Popen(
+                proc = subprocess.Popen(
                     [str(INSTALL_EXE)],
-                    creationflags=subprocess.DETACHED_PROCESS,
+                    creationflags=subprocess.DETACHED_PROCESS
+                    | subprocess.CREATE_NEW_PROCESS_GROUP,
                 )
+
+                def _monitor():
+                    try:
+                        proc.wait(timeout=5)
+                        # Exited within 5 s → startup failed (e.g. DLL error)
+                        app.after(
+                            0,
+                            lambda: messagebox.showerror(
+                                "Restart Failed",
+                                "ClassEdge LMS could not start automatically "
+                                "after the update.\n\n"
+                                "This is usually a temporary Windows issue. "
+                                "Please close this window and open ClassEdge LMS "
+                                "manually from your Desktop shortcut or Start Menu.",
+                            ),
+                        )
+                    except subprocess.TimeoutExpired:
+                        # Still running after 5 s → started OK, close the old window
+                        app.after(0, app.destroy)
+
+                threading.Thread(target=_monitor, daemon=True).start()
+
             app.after(0, _restart)
     else:
         # Fresh install complete — notify

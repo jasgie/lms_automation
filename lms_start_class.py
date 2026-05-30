@@ -159,7 +159,7 @@ def start_class(url: str, scheduled_time: str = ""):
             browser.close()
             sys.exit(1)
 
-        log(f"Page loaded: {current}")
+        log(f"Page loaded: {page.url}")
 
         # Wait for page to fully render
         page.wait_for_timeout(2_000)
