@@ -42,7 +42,7 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 # Version  (bump this string when distributing a new build)
 # ─────────────────────────────────────────────────────────────────────────────
 
-VERSION      = "1.3.4"
+VERSION      = "1.4.0"
 SCHOOL_SHORT = "HCCI"                                  # Short institution label
 SCHOOL_NAME  = "Holy Child Central Colleges, Inc."     # Full institution name
 

@@ -5,7 +5,7 @@ Loads saved auth session and clicks "Start Class" on ClassEdge.
 Called automatically by Windows Task Scheduler — do not run manually.
 
 Usage:
-  python lms_start_class.py --url "https://classedge.hccci.edu.ph/subjectDetail/331/?semester="
+  python lms_start_class.py --url "https://classedge.hccci.edu.ph/material/list/32/"
 """
 
 import argparse
@@ -429,7 +429,7 @@ def start_class(url: str, scheduled_time: str = ""):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Auto-click Start Class on ClassEdge LMS")
-    parser.add_argument("--url", required=True, help="ClassEdge subjectDetail URL")
+    parser.add_argument("--url", required=True, help="ClassEdge material/course URL")
     parser.add_argument("--scheduled-time", default="", help="Scheduled trigger time HH:MM (24h) for deadline check")
     args = parser.parse_args()
 

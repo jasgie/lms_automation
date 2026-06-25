@@ -66,7 +66,13 @@ def subject_folder_name(subject: str, kind: str) -> str:
 
 
 def extract_id(url: str) -> str | None:
-    """Extract numeric subject ID from subjectDetail URL."""
+    """Extract numeric subject/material ID from URL.
+    
+    Works with multiple URL patterns:
+    - /material/list/32/
+    - /subjectDetail/331/
+    - /course/detail/123/
+    """
     for part in url.split("/"):
         if part.isdigit():
             return part

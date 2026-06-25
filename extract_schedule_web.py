@@ -1,7 +1,7 @@
 """
 extract_schedule_web.py
 -----------------------
-Scrapes your ClassEdge SubjectList page and generates schedule.json
+Scrapes your ClassEdge course list page and generates schedule.json
 automatically — no docx download required.
 
 Usage:
@@ -16,6 +16,7 @@ import re
 import sys
 from pathlib import Path
 from datetime import datetime
+from urllib.parse import urljoin
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
 # Ensure UTF-8 output on Windows (avoids CP1252 UnicodeEncodeError with → ✓ etc.)
@@ -27,7 +28,8 @@ if hasattr(sys.stderr, "buffer"):
 AUTH_FILE     = Path(__file__).parent / "auth.json"
 OUTPUT        = Path(__file__).parent / "schedule.json"
 DEBUG_DIR     = Path(__file__).parent / "debug"
-SUBJECT_LIST  = "https://classedge.hccci.edu.ph/SubjectList/"  # LMS_SUBJECT_LIST_URL
+COURSE_LIST   = "https://classedge.hccci.edu.ph/course/list/"  # LMS course list URL (paginated)
+MAX_PAGES     = 50  # Safety limit for pagination
 LEAD_MINUTES  = 15  # trigger this many minutes before class start
 
 DAY_ABBREV = {
@@ -71,11 +73,12 @@ def make_name(day: str, trigger: str, subj: str, kind: str) -> str:
     return f"{day.capitalize()[:3]}_{t}_{slug}_{kind}"
 
 
-def save_debug(page):
+def save_debug(page, suffix: str = ""):
     DEBUG_DIR.mkdir(exist_ok=True)
     ts   = datetime.now().strftime("%Y%m%d_%H%M%S")
-    shot = DEBUG_DIR / f"subjectlist_{ts}.png"
-    html = DEBUG_DIR / f"subjectlist_{ts}.html"
+    label = f"courselist_{ts}{suffix}"
+    shot = DEBUG_DIR / f"{label}.png"
+    html = DEBUG_DIR / f"{label}.html"
     page.screenshot(path=str(shot), full_page=True)
     html.write_text(page.content(), encoding="utf-8")
     print(f"  [debug] screenshot → {shot.name}")
@@ -83,39 +86,53 @@ def save_debug(page):
 
 
 # ---------------------------------------------------------------------------
-# Scraper — uses exact ClassEdge CSS selectors found from page inspection
+# Scraper — selectors for ClassEdge course/list page (2026 redesign)
 # ---------------------------------------------------------------------------
 
 def scrape_cards(page) -> list:
     """
-    Extracts all subject cards from the SubjectList page using a single
-    page.evaluate() call. Uses global h6.sc-title list (full untruncated names)
-    matched by index to card elements.
+    Extracts all course cards from the /course/list/ page.
+    
+    New ClassEdge structure (2026):
+    - Cards: a.course-card[href*="/material/list/"]
+    - Name: .course-name (inside .course-body)
+    - Type: .course-type-pill (contains "Lab" or "Lec")
+    - Days: .course-schedule-days (e.g., "Thu", "Sat, Sun")
+    - Time: .course-schedule-time (e.g., "· 10:30 AM–1:30 PM")
     """
     raw = page.evaluate("""
     () => {
-        const allTitles = Array.from(document.querySelectorAll('h6.sc-title'))
-            .map(h => h.textContent.trim());
-        const cards = document.querySelectorAll('a.sc-body-link[href*="/subjectDetail/"]');
-
-        return Array.from(cards).map((card, i) => {
-            const subject = allTitles[i] || '';
-
-            const wrapper = card.closest('.card, [class*=\"sc-card\"], .subject-card') || card.parentElement;
-            const typeBadge = wrapper ? wrapper.querySelector('.sc-type-badge') : null;
-            const kind = typeBadge ? typeBadge.textContent.trim() : 'Class';
-
-            const dayBadges = Array.from(
-                card.querySelectorAll('.sc-day-badge.sc-day-active, .sc-day-badge.bg-primary')
-            ).map(b => b.textContent.trim().toUpperCase()).filter(Boolean);
-
-            let startTime = '';
-            for (const row of Array.from(card.querySelectorAll('.sc-meta-row'))) {
-                const m = row.textContent.trim().match(/(\\d{1,2}:\\d{2}\\s*(?:AM|PM))/i);
-                if (m) { startTime = m[1]; break; }
+        const cards = document.querySelectorAll('a.course-card[href*="/material/list/"]');
+        
+        return Array.from(cards).map(card => {
+            // Course name from .course-name element or title attribute
+            const nameEl = card.querySelector('.course-name');
+            const subject = nameEl ? (nameEl.getAttribute('title') || nameEl.textContent.trim()) : '';
+            
+            // Type badge (Lab/Lec) from .course-type-pill
+            const typePill = card.querySelector('.course-type-pill');
+            const kind = typePill ? typePill.textContent.trim() : 'Class';
+            
+            // Days from .course-schedule-days (can be "Thu" or "Sat, Sun")
+            const daysEl = card.querySelector('.course-schedule-days');
+            let days = [];
+            if (daysEl) {
+                const daysText = daysEl.textContent.trim();
+                // Split by comma or space to handle "Sat, Sun" format
+                days = daysText.split(/[,\\s]+/).filter(d => d.length > 0);
             }
-
-            return { href: card.href, subject, kind, days: dayBadges, startTime };
+            
+            // Time from .course-schedule-time (format: "· 10:30 AM–1:30 PM")
+            const timeEl = card.querySelector('.course-schedule-time');
+            let startTime = '';
+            if (timeEl) {
+                const timeText = timeEl.textContent.trim();
+                // Extract the start time (before the dash)
+                const match = timeText.match(/(\\d{1,2}:\\d{2}\\s*(?:AM|PM))/i);
+                if (match) startTime = match[1];
+            }
+            
+            return { href: card.href, subject, kind, days, startTime };
         });
     }
     """)
@@ -158,6 +175,54 @@ def scrape_cards(page) -> list:
 
 
 # ---------------------------------------------------------------------------
+# Pagination helpers
+# ---------------------------------------------------------------------------
+
+def get_page_url(base_url: str, page_num: int) -> str:
+    """Build paginated URL: /course/list/?page=N"""
+    if page_num == 1:
+        return base_url
+    sep = "&" if "?" in base_url else "?"
+    return f"{base_url}{sep}page={page_num}"
+
+
+def has_next_page(page) -> bool:
+    """
+    Check if there's a next page link in the pagination.
+    
+    ClassEdge pagination structure:
+    <nav class="pagination-row">
+      <span class="active">1</span>
+      <a href="?page=2">2</a>
+      <a href="?page=2"><i class="fas fa-chevron-right"></i></a>
+    </nav>
+    """
+    return page.evaluate("""
+    () => {
+        // Find pagination container
+        const paginationRow = document.querySelector('.pagination-row, .pagination');
+        if (!paginationRow) return false;
+        
+        // Get current page number from .active element
+        const activeEl = paginationRow.querySelector('.active');
+        const currentNum = activeEl ? parseInt(activeEl.textContent.trim()) : 1;
+        
+        // Check if any link goes to a higher page number
+        const pageLinks = paginationRow.querySelectorAll('a[href*="page="]');
+        for (const link of pageLinks) {
+            const match = link.href.match(/page=(\\d+)/);
+            if (match) {
+                const pageNum = parseInt(match[1]);
+                if (pageNum > currentNum) return true;
+            }
+        }
+        
+        return false;
+    }
+    """)
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -169,9 +234,9 @@ def main():
     print("=" * 60)
     print("  ClassEdge — Automatic Schedule Extractor")
     print("=" * 60)
-    print(f"  Opening: {SUBJECT_LIST}\n")
+    print(f"  Opening: {COURSE_LIST}\n")
 
-    entries = []
+    all_entries = []
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False, slow_mo=100)
@@ -181,11 +246,11 @@ def main():
         )
         page    = context.new_page()
 
-        # Navigate to SubjectList
+        # Navigate to first page of course list
         try:
-            page.goto(SUBJECT_LIST, wait_until="networkidle", timeout=30_000)
+            page.goto(COURSE_LIST, wait_until="networkidle", timeout=30_000)
         except PlaywrightTimeout:
-            page.goto(SUBJECT_LIST, wait_until="domcontentloaded", timeout=30_000)
+            page.goto(COURSE_LIST, wait_until="domcontentloaded", timeout=30_000)
 
         # Check for session expiry
         current = page.url
@@ -197,18 +262,48 @@ def main():
         print(f"  Loaded: {current}")
         page.wait_for_timeout(2_000)
 
-        # Save debug snapshot
-        save_debug(page)
+        # Save debug snapshot for first page
+        save_debug(page, "_page1")
 
-        # Try scraping with correct selectors
-        entries = scrape_cards(page)
+        # Scrape with pagination
+        page_num = 1
+        while page_num <= MAX_PAGES:
+            print(f"\n  Scraping page {page_num}...")
+            
+            entries = scrape_cards(page)
+            if not entries:
+                print(f"  No entries found on page {page_num}.")
+                if page_num == 1:
+                    # First page empty - save debug for troubleshooting
+                    save_debug(page, "_empty")
+                break
+            
+            all_entries.extend(entries)
+            print(f"  Collected {len(entries)} entries from page {page_num} (total: {len(all_entries)})")
+
+            # Check if there's a next page
+            if not has_next_page(page):
+                print(f"  No more pages after page {page_num}.")
+                break
+
+            # Navigate to next page
+            page_num += 1
+            next_url = get_page_url(COURSE_LIST, page_num)
+            print(f"  Navigating to: {next_url}")
+            
+            try:
+                page.goto(next_url, wait_until="networkidle", timeout=30_000)
+            except PlaywrightTimeout:
+                page.goto(next_url, wait_until="domcontentloaded", timeout=30_000)
+            
+            page.wait_for_timeout(1_500)
 
         browser.close()
 
     # Deduplicate by URL
     seen  = set()
     clean = []
-    for e in entries:
+    for e in all_entries:
         if e["url"] not in seen:
             seen.add(e["url"])
             clean.append(e)
@@ -220,7 +315,7 @@ def main():
         sys.exit(1)
 
     # Print summary
-    print(f"\n  Found {len(clean)} classes:\n")
+    print(f"\n  Found {len(clean)} unique classes:\n")
     for e in clean:
         print(f"    {e['day']:3s}  {e['trigger_time']}  {e['name']}")
 
