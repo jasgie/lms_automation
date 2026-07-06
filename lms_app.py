@@ -42,8 +42,8 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 # Version  (bump this string when distributing a new build)
 # ─────────────────────────────────────────────────────────────────────────────
 
-VERSION      = "1.4.0"
-SCHOOL_SHORT = "HCCI"                                  # Short institution label
+VERSION      = "1.4.1"
+SCHOOL_SHORT = "HCCCI"                                  # Short institution label
 SCHOOL_NAME  = "Holy Child Central Colleges, Inc."     # Full institution name
 
 # GitHub repo used for update checks (format: "owner/repo")
