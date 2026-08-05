@@ -42,7 +42,7 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 # Version  (bump this string when distributing a new build)
 # ─────────────────────────────────────────────────────────────────────────────
 
-VERSION      = "1.4.1"
+VERSION      = "1.4.2"
 SCHOOL_SHORT = "HCCCI"                                  # Short institution label
 SCHOOL_NAME  = "Holy Child Central Colleges, Inc."     # Full institution name
 
@@ -1347,6 +1347,13 @@ class App(tk.Tk):
 
         h1("🆕  What's New")
         CHANGELOG = [
+            ("v1.4.2  (2026-08-05)", [
+                "Fixed schedule extraction for subjects with multiple schedule",
+                "  rows under one card (e.g. a 2-hour LEC on one day and a",
+                "  3-hour LAB or a second LEC time on another day). Previously",
+                "  only the first row's time was read and applied to every day;",
+                "  now each day/time row is read and saved separately.",
+            ]),
             ("v1.3.2  (2026-05-17)", [
                 "When 'Start Class' button is not found, the app now checks for",
                 "  an 'End Class' button. If found, it means class is already",

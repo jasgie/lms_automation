@@ -99,6 +99,11 @@ def scrape_cards(page) -> list:
     - Type: .course-type-pill (contains "Lab" or "Lec")
     - Days: .course-schedule-days (e.g., "Thu", "Sat, Sun")
     - Time: .course-schedule-time (e.g., "· 10:30 AM–1:30 PM")
+
+    Some cards list MULTIPLE schedule rows under the same kind pill (e.g. a LEC
+    that meets Tue 1:00-3:00 PM AND Wed 10:30-12:30 PM at different times), so
+    every .course-schedule-days / .course-schedule-time pair on the card must
+    be read — not just the first one — otherwise later rows are silently lost.
     """
     raw = page.evaluate("""
     () => {
@@ -113,26 +118,38 @@ def scrape_cards(page) -> list:
             const typePill = card.querySelector('.course-type-pill');
             const kind = typePill ? typePill.textContent.trim() : 'Class';
             
-            // Days from .course-schedule-days (can be "Thu" or "Sat, Sun")
-            const daysEl = card.querySelector('.course-schedule-days');
-            let days = [];
-            if (daysEl) {
-                const daysText = daysEl.textContent.trim();
-                // Split by comma or space to handle "Sat, Sun" format
-                days = daysText.split(/[,\\s]+/).filter(d => d.length > 0);
+            // A card can have several schedule rows (different day/time pairs).
+            // Pair each .course-schedule-days element with the .course-schedule-time
+            // element at the same index instead of grabbing only the first of each.
+            const daysEls = card.querySelectorAll('.course-schedule-days');
+            const timeEls = card.querySelectorAll('.course-schedule-time');
+            const rowCount = Math.max(daysEls.length, timeEls.length);
+
+            const schedules = [];
+            for (let i = 0; i < rowCount; i++) {
+                const daysEl = daysEls[i] || daysEls[daysEls.length - 1];
+                const timeEl = timeEls[i] || timeEls[timeEls.length - 1];
+
+                let days = [];
+                if (daysEl) {
+                    const daysText = daysEl.textContent.trim();
+                    // Split by comma or space to handle "Sat, Sun" format
+                    days = daysText.split(/[,\\s]+/).filter(d => d.length > 0);
+                }
+
+                let startTime = '';
+                if (timeEl) {
+                    const timeText = timeEl.textContent.trim();
+                    const match = timeText.match(/(\\d{1,2}:\\d{2}\\s*(?:AM|PM))/i);
+                    if (match) startTime = match[1];
+                }
+
+                if (days.length || startTime) {
+                    schedules.push({ days, startTime });
+                }
             }
             
-            // Time from .course-schedule-time (format: "· 10:30 AM–1:30 PM")
-            const timeEl = card.querySelector('.course-schedule-time');
-            let startTime = '';
-            if (timeEl) {
-                const timeText = timeEl.textContent.trim();
-                // Extract the start time (before the dash)
-                const match = timeText.match(/(\\d{1,2}:\\d{2}\\s*(?:AM|PM))/i);
-                if (match) startTime = match[1];
-            }
-            
-            return { href: card.href, subject, kind, days, startTime };
+            return { href: card.href, subject, kind, schedules };
         });
     }
     """)
@@ -141,35 +158,42 @@ def scrape_cards(page) -> list:
     entries = []
 
     for card in raw:
-        href    = card["href"]
-        subject = card["subject"] or "Subject"
-        kind    = card["kind"]
-        days    = card["days"]
-        start_raw = card["startTime"]
+        href      = card["href"]
+        subject   = card["subject"] or "Subject"
+        kind      = card["kind"]
+        schedules = card["schedules"]
 
-        if not days:
-            print(f"  WARNING: No day found for {subject} ({href}) — skipped.")
+        if not schedules:
+            print(f"  WARNING: No schedule found for {subject} ({href}) — skipped.")
             continue
 
-        start_24 = parse_time(start_raw) if start_raw else None
-        if not start_24:
-            print(f"  WARNING: No time found for {subject} ({href}) — skipped.")
-            continue
+        for sched in schedules:
+            days      = sched["days"]
+            start_raw = sched["startTime"]
 
-        trigger = subtract_minutes(start_24, LEAD_MINUTES)
+            if not days:
+                print(f"  WARNING: No day found for {subject} ({href}) — skipped row.")
+                continue
 
-        for day in days:
-            day = DAY_ABBREV.get(day[:3].lower(), day[:3].upper())
-            name = make_name(day, trigger, subject, kind)
-            entries.append({
-                "name":         name,
-                "subject":      subject,
-                "kind":         kind.upper(),
-                "day":          day,
-                "trigger_time": trigger,
-                "url":          href,
-            })
-            print(f"  {day:3s}  {start_24}  {subject} ({kind})  → trigger {trigger}")
+            start_24 = parse_time(start_raw) if start_raw else None
+            if not start_24:
+                print(f"  WARNING: No time found for {subject} ({href}) — skipped row.")
+                continue
+
+            trigger = subtract_minutes(start_24, LEAD_MINUTES)
+
+            for day in days:
+                day = DAY_ABBREV.get(day[:3].lower(), day[:3].upper())
+                name = make_name(day, trigger, subject, kind)
+                entries.append({
+                    "name":         name,
+                    "subject":      subject,
+                    "kind":         kind.upper(),
+                    "day":          day,
+                    "trigger_time": trigger,
+                    "url":          href,
+                })
+                print(f"  {day:3s}  {start_24}  {subject} ({kind})  → trigger {trigger}")
 
     return entries
 
@@ -300,12 +324,15 @@ def main():
 
         browser.close()
 
-    # Deduplicate by URL
+    # Deduplicate by (url, day, trigger_time) — a subject can have multiple
+    # schedule rows on the same course card (e.g. different day/time slots),
+    # so deduping by url alone would drop all but the first row.
     seen  = set()
     clean = []
     for e in all_entries:
-        if e["url"] not in seen:
-            seen.add(e["url"])
+        key = (e["url"], e["day"], e["trigger_time"])
+        if key not in seen:
+            seen.add(key)
             clean.append(e)
 
     if not clean:
